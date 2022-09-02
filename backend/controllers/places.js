@@ -5,6 +5,9 @@ const db = require("../models")
 const { Place, Comment, User } = db
 
 router.post('/', async (req, res) => {
+    if(req.currentUser?.role !== 'admin'){
+        return res.status(403).json({message: 'You are not allowed to add a place'})
+    }
     if (!req.body.pic) {
         req.body.pic = 'http://placekitten.com/400/400'
     }
@@ -46,6 +49,9 @@ router.get('/:placeId', async (req, res) => {
 })
 
 router.put('/:placeId', async (req, res) => {
+    if(req.currentUser?.role !== 'admin'){
+        return res.status(403).json({message: 'You are not allowed to edit places'})
+    }
     let placeId = Number(req.params.placeId)
     if (isNaN(placeId)) {
         res.status(404).json({ message: `Invalid id "${placeId}"` })
@@ -81,6 +87,9 @@ router.delete('/:placeId', async (req, res) => {
         }
     }
 })
+  
+
+  
 
 router.post('/:placeId/comments', async (req, res) => {
     const placeId = Number(req.params.placeId)
@@ -92,10 +101,11 @@ router.post('/:placeId/comments', async (req, res) => {
     })
 
     if (!place) {
-        res.status(404).json({ message: `Could not find place with id "${placeId}"` })
+        return res.status(404).json({ message: `Could not find place with id "${placeId}"` })
     }
+
     if (!req.currentUser) {
-        return res.status(404).json({ message: `You must be logged in to leave a rant or rave`})
+        return res.status(404).json({ message: `You must be logged in to leave a rand or rave.` })
     }
 
     const comment = await Comment.create({
@@ -103,12 +113,15 @@ router.post('/:placeId/comments', async (req, res) => {
         authorId: req.currentUser.userId,
         placeId: placeId
     })
+
     res.send({
         ...comment.toJSON(),
         author: req.currentUser
     })
-    
 })
+
+
+  
 
 router.delete('/:placeId/comments/:commentId', async (req, res) => {
     let placeId = Number(req.params.placeId)
@@ -123,10 +136,12 @@ router.delete('/:placeId/comments/:commentId', async (req, res) => {
             where: { commentId: commentId, placeId: placeId }
         })
         if (!comment) {
-            res.status(404).json({ message: `Could not find comment with id "${commentId}" for place with id "${placeId}"` })
+            res.status(404).json({ 
+                message: `Could not find comment` 
+            })
         } else if (comment.authorId !== req.currentUser?.userId) {
-            res.status(403).json({
-                message: `You do not have permission to delete comment "${comment.commentId}"`
+            res.status(403).json({ 
+                message: `You do not have permission to delete comment "${comment.commentId}"` 
             })
         } else {
             await comment.destroy()
@@ -134,6 +149,8 @@ router.delete('/:placeId/comments/:commentId', async (req, res) => {
         }
     }
 })
+
+  
 
 
 module.exports = router
