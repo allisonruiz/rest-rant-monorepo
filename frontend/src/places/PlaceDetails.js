@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useHistory, useParams } from "react-router"
+import { CurrentUser } from "../contexts/CurrentUser";
 import CommentCard from './CommentCard'
 import NewCommentForm from "./NewCommentForm";
+
 
 function PlaceDetails() {
 
@@ -51,19 +53,18 @@ function PlaceDetails() {
 				.filter(comment => comment.commentId !== deletedComment.commentId)
 		})
 	}
-
 	async function createComment(commentAttributes) {
 		const response = await fetch(`http://localhost:4000/places/${place.placeId}/comments`, {
 			method: 'POST',
+			credentials: 'include',
 			headers: {
-				'Authorization': `Bearer ${localStorage.getItem('token')}`,
 				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify(commentAttributes)
 		})
-
+	
 		const comment = await response.json()
-
+	
 		setPlace({
 			...place,
 			comments: [
@@ -71,11 +72,9 @@ function PlaceDetails() {
 				comment
 			]
 		})
-
+	
 	}
-
-
-
+	
 	let comments = (
 		<h3 className="inactive">
 			No comments yet!
@@ -105,6 +104,21 @@ function PlaceDetails() {
 				<CommentCard key={comment.commentId} comment={comment} onDelete={() => deleteComment(comment)} />
 			)
 		})
+	}	
+	let placeActions = null
+
+
+	if (CurrentUser?.role === 'admin') {
+		placeActions = (
+			<>
+			<a className="btn btn-warning" onClick={editPlace}>
+				Edit
+			</a>
+			<button type="submit" className="btn btn-danger" onClick={deletePlace}>
+				Delete
+			</button>
+			</>
+		)
 	}
 
 
@@ -134,12 +148,7 @@ function PlaceDetails() {
 						Serving {place.cuisines}.
 					</h4>
 					<br />
-					<a className="btn btn-warning" onClick={editPlace}>
-						Edit
-					</a>{` `}
-					<button type="submit" className="btn btn-danger" onClick={deletePlace}>
-						Delete
-					</button>
+					{placeActions}
 				</div>
 			</div>
 			<hr />
